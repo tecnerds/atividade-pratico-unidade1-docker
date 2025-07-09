@@ -1,157 +1,100 @@
-Aqui está um exemplo de um arquivo `README.md` para o seu jogo:
+# Estrutura Docker Compose - Guess Game
+
+## Descrição
+
+Este projeto implementa uma estrutura completa com Docker Compose para o jogo de adivinhação disponível em [https://github.com/fams/guess_game](https://github.com/fams/guess_game). A solução engloba:
+
+- Backend em Python (Flask)
+- Banco de dados Postgres
+- Frontend em React servido via NGINX
+- NGINX atuando como proxy reverso e balanceador de carga para múltiplas instâncias do backend
 
 ---
 
-# Jogo de Adivinhação com Flask
+## Estrutura dos Serviços
 
-Este é um simples jogo de adivinhação desenvolvido utilizando o framework Flask. O jogador deve adivinhar uma senha criada aleatoriamente, e o sistema fornecerá feedback sobre o número de letras corretas e suas respectivas posições.
+- **db**: Container com Postgres, usando volume persistente para os dados.
+- **backend**: Container Flask, conectado ao banco e pronto para ser escalado.
+- **frontend**: Build do React, servido como arquivos estáticos.
+- **nginx**: Servidor web e proxy reverso, servindo o frontend e balanceando requisições para múltiplos backends.
 
-## Funcionalidades
+---
 
-- Criação de um novo jogo com uma senha fornecida pelo usuário.
-- Adivinhe a senha e receba feedback se as letras estão corretas e/ou em posições corretas.
-- As senhas são armazenadas  utilizando base64.
-- As adivinhações incorretas retornam uma mensagem com dicas.
-  
-## Requisitos
-
-- Python 3.8+
-- Flask
-- Um banco de dados local (ou um mecanismo de armazenamento configurado em `current_app.db`)
-- node 18.17.0
-
-## Instalação
+## Como rodar
 
 1. Clone o repositório:
-
-   ```bash
-   git clone https://github.com/fams/guess_game.git
-   cd guess-game
+   ```sh
+   git clone git@github.com:tecnerds/atividade-pratico-unidade1-docker.git
+   cd atividade-pratico-unidade1-docker
    ```
 
-2. Crie um ambiente virtual e ative-o:
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   venv\Scripts\activate  # Windows
+2. Construa e suba os containers:
+   ```sh
+   docker-compose up --build
    ```
 
-3. Instale as dependências:
+3. Acesse a aplicação em:  
+- Interface do jogo: 
+[http://localhost:3000](http://localhost:3000)
+- API/ backend: 
+[http://localhost:5000](http://localhost:5000)
 
-   ```bash
-   pip install -r requirements.txt
+---
+
+## Atualização de Componentes
+
+- **Backend**: Altere o Dockerfile ou a imagem/tag no `docker-compose.yml` e execute `docker-compose up --build backend`.
+- **Frontend**: Altere o Dockerfile ou a imagem/tag no `docker-compose.yml` e execute `docker-compose up --build frontend`.
+- **Banco de Dados**: Altere a imagem/tag do Postgres no `docker-compose.yml` e execute `docker-compose up --build db`.
+
+---
+
+## Decisões de Design
+
+- **Volumes**: O banco de dados utiliza um volume nomeado (`postgres_data`) para garantir persistência dos dados.
+- **Redes**: Todos os serviços estão na mesma rede Docker (`appnet`) para facilitar a comunicação interna.
+- **Resiliência**: Todos os containers usam `restart: always` para reiniciar automaticamente em caso de falha.
+- **Balanceamento de carga**: O NGINX está configurado para distribuir requisições entre múltiplas instâncias do backend (veja `frontend/default.conf`).
+- **Facilidade de atualização**: Cada serviço pode ser atualizado individualmente, bastando alterar a imagem/tag ou reconstruir o container correspondente.
+
+---
+
+## Configuração do NGINX
+
+O arquivo `frontend/default.conf` define:
+
+- Servir arquivos estáticos do React.
+- Proxy reverso para `/create`, `/guess` e `/health` para o backend, com balanceamento de carga.
+
+---
+
+## Observações
+
+- O backend Flask está rodando em modo produção, mas recomenda-se usar Gunicorn para produção real.
+- O frontend é servido como arquivos estáticos pelo NGINX.
+- O banco de dados é persistente e pode ser atualizado sem perda de dados.
+
+---
+
+## Como atualizar um componente
+
+1. Altere a versão da imagem ou o Dockerfile do serviço desejado.
+2. Execute:
+   ```sh
+   docker-compose up --build <serviço>
+   ```
+   Exemplo para atualizar só o backend:
+   ```sh
+   docker-compose up --build backend
    ```
 
-4. Configure o banco de dados com as variáveis de ambiente no arquivo start-backend.sh
-    1. Para sqlite
-
-        ```bash
-            export FLASK_APP="run.py"
-            export FLASK_DB_TYPE="sqlite"            # Use SQLITE
-            export FLASK_DB_PATH="caminho/db.sqlite" # caminho do banco
-        ```
-
-    2. Para Postgres
-
-        ```bash
-            export FLASK_APP="run.py"
-            export FLASK_DB_TYPE="postgres"       # Use postgres
-            export FLASK_DB_USER="postgres"       # Usuário do banco
-            export FLASK_DB_NAME="postgres"       # Nome do Banco
-            export FLASK_DB_PASSWORD="secretpass" # Senha do banco
-            export FLASK_DB_HOST="localhost"      # Hostname
-            export FLASK_DB_PORT="5432"           # Porta
-        ```
-
-    3. Para DynamoDB
-
-        ```bash
-        export FLASK_APP="run.py"
-        export FLASK_DB_TYPE="dynamodb"       # Use postgres
-        export AWS_DEFAULT_REGION="us-east-1" # AWS region
-        export AWS_ACCESS_KEY_ID="FAKEACCESSKEY123456" 
-        export AWS_SECRET_ACCESS_KEY="FakeSecretAccessKey987654321"
-        export AWS_SESSION_TOKEN="FakeSessionTokenABCDEFGHIJKLMNOPQRSTUVXYZ1234567890"
-        ```
-
-5. Execute o backend
-
-   ```bash
-   ./start-backend.sh &
-   ```
-
-6. Cuidado! verifique se o seu linux está lendo o arquivo .sh com fim de linha do windows CRLF. Para verificar utilize o vim -b start-backend.sh
-
-## Frontend
-No diretorio de frontend
-
-1. Instale o node com o nvm. Se não tiver o nvm instalado, siga o [tutorial](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
-
-    ```bash
-    nvm install 18.17.0
-    nvm use 18.17.0
-    # Habilite o yarn
-    corepack enable
-    ```
-
-2. Instale as dependências do node com o npm:
-
-    ```bash
-    npm install
-    ```
-
-3. Exporte a url onde está executando o backend e execute o backend.
-
-   ```bash
-    export REACT_APP_BACKEND_URL=http://localhost:5000
-    yarn start
-   ```
-
-## Como Jogar
-
-### 1. Criar um novo jogo
-
-Acesse a url do frontend http://localhost:3000
-
-Digite uma frase secreta
-
-Envie
-
-Salve o game-id
+---
 
 
-### 2. Adivinhar a senha
+## URL de acesso
 
-Acesse a url do frontend http://localhost:3000
-
-Vá para o endponint breaker
-
-entre com o game_id que foi gerado pelo Creator
-
-Tente adivinhar
-
-## Estrutura do Código
-
-### Rotas:
-
-- **`/create`**: Cria um novo jogo. Armazena a senha codificada em base64 e retorna um `game_id`.
-- **`/guess/<game_id>`**: Permite ao usuário adivinhar a senha. Compara a adivinhação com a senha armazenada e retorna o resultado.
-
-### Classes Importantes:
-
-- **`Guess`**: Classe responsável por gerenciar a lógica de comparação entre a senha e a tentativa do jogador.
-- **`WrongAttempt`**: Exceção personalizada que é levantada quando a tentativa está incorreta.
-
-
-
-## Melhorias Futuras
-
-- Implementar autenticação de usuário para salvar e carregar jogos.
-- Adicionar limite de tentativas.
-- Melhorar a interface de feedback para as tentativas de adivinhação.
-
-## Licença
-
-Este projeto está licenciado sob a [MIT License](LICENSE).
-
+Acesse pelo seguinte endereço:  
+- Interface do jogo: 
+[http://localhost:3000](http://localhost:3000)
+- API/ backend: 
+[http://localhost:5000](http://localhost:5000)
