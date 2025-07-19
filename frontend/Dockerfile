@@ -7,8 +7,6 @@ WORKDIR /app
 COPY . .
 RUN npm install
 
-# Definindo a variável de ambiente para o Frontend
-# A variável REACT_APP_BACKEND_URL deve ser passada como argumento de construção
 ARG REACT_APP_BACKEND_URL
 ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
 RUN echo $REACT_APP_BACKEND_URL
